@@ -1,87 +1,198 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Простой Чат</title>
+    <title>Современный Чат</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font: 13px Helvetica, Arial; }
-        #form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; display: flex; }
-        #input { border: none; padding: 10px; width: 90%; margin-right: .5%; }
-        #form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-        #messages { list-style-type: none; margin: 0; padding: 10px 0 60px 0; }
-        
-        #messages li {
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            max-width: 70%; 
-            border-radius: 15px;
-            word-wrap: break-word;
-            clear: both; 
+        /* БАЗОВЫЕ СТИЛИ */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+        body { 
+            background: #E9EAEF; /* Светлый фон для всего экрана */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
         }
         
-        #messages li:not(.my-message) { 
-            background: #eee;
-            color: #000;
-            float: left;
+        /* ИМИТАЦИЯ МОБИЛЬНОГО КОНТЕЙНЕРА */
+        #mobile-container {
+            width: 100%;
+            max-width: 400px;
+            height: 90vh;
+            background: #FFFFFF;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
         }
 
-        #messages li.my-message {
-            background: #DCF8C6; 
-            color: #000;
-            float: right; 
+        /* ----------------------------------------------------- */
+        /* ОБЛАСТЬ СООБЩЕНИЙ */
+        /* ----------------------------------------------------- */
+        #messages-wrapper {
+            flex-grow: 1;
+            overflow-y: auto; 
+            padding: 20px 20px 0; /* Увеличенный отступ сверху */
+        }
+
+        #messages { 
+            list-style-type: none; 
+            padding: 0; 
+            /* Отступ, чтобы последнее сообщение было видно над формой */
+            padding-bottom: 70px; 
         }
         
+        #messages li {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            max-width: 85%;
+            border-radius: 20px; /* Более скругленные */
+            word-wrap: break-word;
+            clear: both; 
+            font-size: 14px;
+        }
+        
+        /* Сообщения других пользователей (слева) */
+        #messages li:not(.my-message) { 
+            background: #F0F2F5; 
+            color: #1C1C1C;
+            float: left;
+            border-top-left-radius: 4px; 
+        }
+
+        /* Сообщения отправителя (справа) */
+        #messages li.my-message {
+            background: #4A90E2; /* Голубой акцентный цвет */
+            color: #FFFFFF;
+            float: right; 
+            border-top-right-radius: 4px; 
+        }
+        
+        /* Стиль для системных сообщений */
         #messages li em {
             display: block;
             text-align: center;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            float: none;
-            background: none;
             font-size: 11px;
             color: #777;
+            font-style: normal;
         }
 
-        /* Логика отображения имени пользователя */
+        /* ----------------------------------------------------- */
+        /* 💡 ФОРМА ОТПРАВКИ (НИЖНИЙ БАР) */
+        /* ----------------------------------------------------- */
+        #form { 
+            background: #FFFFFF; 
+            padding: 10px 20px; 
+            position: absolute; 
+            bottom: 0; 
+            width: 100%; 
+            display: flex;
+            align-items: center; /* Центрируем по вертикали */
+            border-top: 1px solid #F0F2F5;
+        }
+        #input { 
+            border: none; 
+            padding: 12px 18px; /* Увеличенный паддинг */
+            width: 100%; /* Занимает всю доступную ширину */
+            background: #F0F2F5; 
+            border-radius: 25px; 
+            margin-right: 10px;
+            outline: none;
+            font-size: 15px;
+        }
+        #form button { 
+            width: 45px; /* Меньший размер */
+            height: 45px;
+            background: #4A90E2; 
+            border: none; 
+            border-radius: 50%;
+            color: white;
+            font-size: 20px; /* Больше иконка стрелки */
+            padding-bottom: 3px;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0; /* Не сжимается */
+        }
+        
+        /* ----------------------------------------------------- */
+        /* 💡 ОБЛАСТЬ ВХОДА/РЕГИСТРАЦИИ (NICKNAME-AREA) */
+        /* ----------------------------------------------------- */
         #nickname-area {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #fff;
+            background: #F0F2F5; /* Светло-серый фон для контраста */
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
-            z-index: 10;
+            z-index: 100; 
             padding: 20px;
         }
-        #nickname-area input, #nickname-area button {
-            padding: 15px;
-            font-size: 18px;
-            margin-top: 10px;
-            width: 300px;
+        #nickname-area h2 {
+            font-size: 28px;
+            color: #1C1C1C;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
+        #nickname-area input {
+            padding: 18px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            width: 80%;
+            max-width: 350px;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            outline: none;
+        }
+        #nickname-area button {
+            padding: 18px;
+            font-size: 18px;
+            width: 80%;
+            max-width: 350px;
+            border-radius: 12px;
+            border: none;
+            background: #4A90E2; /* Акцентный цвет */
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #nickname-area button:hover {
+            background: #3A7CC6;
+        }
+
         /* Скрыть чат, пока имя не введено */
-        #messages, #form {
+        #messages-wrapper, #form {
             display: none;
         }
     </style>
 </head>
 <body>
     <div id="nickname-area">
+        <h2>Войти в Чат</h2>
         <input id="nickname" placeholder="Введите ваше имя" />
-        <input id="password" type="password" placeholder="Введите пароль" />
-        <button id="set-nickname">Войти в чат</button>
+        <button id="set-nickname">Продолжить</button>
     </div>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Отправить</button>
-    </form>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <div id="mobile-container">
+        
+        <div id="messages-wrapper">
+            <ul id="messages"></ul>
+        </div>
+        
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="Введите сообщение..." />
+            <button>➔</button>
+        </form>
+
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -90,11 +201,12 @@
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
         
-        // Переменные для логики имени пользователя
         const nicknameArea = document.getElementById('nickname-area');
         const nicknameInput = document.getElementById('nickname');
         const setNicknameButton = document.getElementById('set-nickname');
-        const passwordInput = document.getElementById('password'); 
+        const messagesWrapper = document.getElementById('messages-wrapper');
+        const mobileContainer = document.getElementById('mobile-container'); // Получаем контейнер
+        
         let username = 'Аноним'; 
 
         // -------------------------------------------------------------------
@@ -108,54 +220,38 @@
             
             if (msg.username === 'Система') {
                 item.innerHTML = `<em>${msg.text}</em>`;
-                item.style.fontWeight = 'bold';
                 item.style.width = '100%';
                 item.style.float = 'none';
                 item.style.background = 'none';
                 item.style.textAlign = 'center';
+                item.style.padding = '5px 0';
             } else {
                 item.textContent = `${msg.username}: ${msg.text}`;
             }
             
             messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
+            // Прокрутка вниз в контейнере сообщений
+            messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
         }
         // -------------------------------------------------------------------
 
-        // 1. ЛОГИКА ВВОДА ИМЕНИ И ПАРОЛЯ
+        // 1. ЛОГИКА ВХОДА
         setNicknameButton.addEventListener('click', function() {
-            const nicknameValue = nicknameInput.value.trim();
-            const passwordValue = passwordInput.value;
-
-            if (nicknameValue && passwordValue) {
-                // Отправляем ИМЯ и ПАРОЛЬ на сервер для проверки/регистрации
-                socket.emit('login', { username: nicknameValue, password: passwordValue }); 
-            }
-        });
-
-        // 💡 ОБНОВЛЕННЫЙ ОБРАБОТЧИК: Ответ сервера на попытку входа/регистрации
-        socket.on('login response', function(response) {
-            if (response.success) {
-                username = response.username; 
+            if (nicknameInput.value.trim()) {
+                username = nicknameInput.value.trim();
                 
-                // Скрыть область ввода имени и показать чат
                 nicknameArea.style.display = 'none';
-                messages.style.display = 'block';
-                form.style.display = 'flex'; 
+                messagesWrapper.style.display = 'block';
+                form.style.display = 'flex';
+                
+                socket.emit('new user', username); 
                 
                 if (input) {
                     input.placeholder = `Отправить как ${username}...`;
                 }
-                
-                // Уведомляем сервер об успешном входе, чтобы он отправил системное сообщение
-                socket.emit('new user'); 
-
-            } else {
-                alert("Ошибка входа: " + response.message);
-                passwordInput.value = ''; // Очищаем поле пароля после неудачной попытки
             }
         });
-        
+
         // 2. ОБРАБОТЧИК ОТПРАВКИ СООБЩЕНИЯ
         form.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -181,6 +277,25 @@
         // 4. Обработка получения НОВОГО сообщения 
         socket.on('chat message', function(msg) {
             displayMessage(msg); 
+        });
+
+
+        // 💡 НОВЫЕ ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНОЙ КЛАВИАТУРЫ
+        
+        // При фокусе: Уменьшаем высоту контейнера, чтобы избежать перекрытия клавиатурой.
+        input.addEventListener('focus', function() {
+            // Уменьшаем видимую высоту мобильного контейнера, чтобы браузер сдвинул его вверх
+            mobileContainer.style.height = 'calc(100vh - 60px)'; // 60px - примерный размер нижнего отступа
+            mobileContainer.style.maxHeight = 'calc(100vh - 60px)';
+            
+            // Принудительная прокрутка вниз
+            messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+        });
+
+        // При потере фокуса: Возвращаем контейнер в исходное состояние.
+        input.addEventListener('blur', function() {
+            mobileContainer.style.height = '90vh'; 
+            mobileContainer.style.maxHeight = 'none'; 
         });
 
     </script>

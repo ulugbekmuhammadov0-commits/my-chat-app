@@ -1,10 +1,9 @@
 const express = require('express');
-const http = require('http');
+const http = require = require('http');
 const socketio = require('socket.io');
 const mongoose = require('mongoose');
 
 // =========================================================
-// ИЗМЕНЕНИЕ ДЛЯ ХОСТИНГА: Используем переменную окружения
 const DB_URI = process.env.MONGO_URI; 
 // =========================================================
 
@@ -25,14 +24,7 @@ const MessageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', MessageSchema); 
 
-// 💡 НОВАЯ СХЕМА: Определение схемы пользователя для регистрации/входа
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true }, // Имя должно быть уникальным
-  password: { type: String, required: true } // Пароль хранится в чистом виде (для простоты)
-});
-const User = mongoose.model('User', UserSchema); 
-// ---------------------------------------------------------------------------------
-
+// 🛑 УДАЛЕНА СХЕМА USER
 
 // --- 2. НАСТРОЙКА СЕРВЕРА ---
 const app = express();
@@ -41,6 +33,9 @@ const io = socketio(server);
 
 const PORT = process.env.PORT || 3000; 
 
+// 🛑 УДАЛЕН РОУТ app.get('/users', ...)
+
+// Обслуживание нашего HTML файла
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
@@ -49,8 +44,6 @@ app.get('/', (req, res) => {
 io.on('connection', async (socket) => {
   let currentUsername = 'Аноним'; 
   console.log('Новый пользователь подключился');
-
-  // УДАЛЕНО: const CORRECT_PASSWORD = "mysecretpassword"; - Пароль теперь хранится в БД
 
   // Загрузка истории сообщений при подключении
   if (DB_URI) {
@@ -62,58 +55,19 @@ io.on('connection', async (socket) => {
       }
   }
 
-  // 💡 НОВЫЙ ОБРАБОТЧИК: Проверка логина/пароля и регистрация
-  socket.on('login', async ({ username, password }) => {
-      if (!DB_URI) {
-          socket.emit('login response', { success: false, message: "База данных недоступна. Авторизация невозможна." });
-          return;
-      }
-      
-      try {
-          // 1. Ищем пользователя в базе
-          const user = await User.findOne({ username: username });
-          
-          if (user) {
-              // --- А. СУЩЕСТВУЮЩИЙ ПОЛЬЗОВАТЕЛЬ (Вход) ---
-              if (user.password === password) {
-                  currentUsername = username;
-                  socket.emit('login response', { success: true, username: username });
-              } else {
-                  socket.emit('login response', { success: false, message: "Неверный пароль для этого имени." });
-              }
-          } else {
-              // --- B. НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Регистрация) ---
-              if (password.length < 4) { 
-                  socket.emit('login response', { success: false, message: "Пароль слишком короткий (минимум 4 символа)." });
-                  return;
-              }
-
-              // Создаем и сохраняем нового пользователя
-              const newUser = new User({ username: username, password: password });
-              await newUser.save();
-              
-              currentUsername = username;
-              socket.emit('login response', { success: true, username: username, isNew: true });
-              
-          }
-      } catch (error) {
-          console.error('Ошибка авторизации/регистрации:', error);
-          socket.emit('login response', { success: false, message: "Произошла ошибка базы данных." });
-      }
+  // 💡 ВОССТАНОВЛЕН СТАРЫЙ ОБРАБОТЧИК: Прием только имени пользователя
+  socket.on('new user', (name) => {
+      currentUsername = name;
+      // Отправляем всем (включая нового пользователя) системное сообщение
+      io.emit('chat message', { 
+        username: 'Система', 
+        text: `**${currentUsername}** вошел в чат.`, 
+        timestamp: new Date()
+      });
   });
 
-  // 💡 ИСПРАВЛЕННЫЙ ОБРАБОТЧИК: Вызывается клиентом ТОЛЬКО после успешной авторизации
-  socket.on('new user', () => {
-      // Проверяем, что имя пользователя уже установлено
-      if (currentUsername !== 'Аноним') {
-          io.emit('chat message', { 
-              username: 'Система', 
-              text: `**${currentUsername}** вошел в чат.`, 
-              timestamp: new Date()
-          });
-      }
-  });
-  
+  // 🛑 УДАЛЕН ОБРАБОТЧИК 'login'
+
   // Обработка входящих сообщений от клиента
   socket.on('chat message', async (msgText) => {
     const newMessage = { 
