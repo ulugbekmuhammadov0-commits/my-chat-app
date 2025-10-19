@@ -5,12 +5,50 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font: 13px Helvetica, Arial; }
-        #form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; display: flex; /* Исправлено: form display должен быть flex */ }
+        #form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; display: flex; }
         #input { border: none; padding: 10px; width: 90%; margin-right: .5%; }
         #form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-        #messages { list-style-type: none; margin: 0; padding: 0; }
-        #messages li { padding: 5px 10px; }
-        #messages li:nth-child(odd) { background: #eee; }
+        #messages { list-style-type: none; margin: 0; padding: 10px 0 60px 0; /* Добавлен отступ снизу */ }
+        
+        /* ----------------------------------------------------- */
+        /* НОВЫЕ СТИЛИ ДЛЯ ПУЗЫРЬКОВ ЧАТА */
+        /* ----------------------------------------------------- */
+        #messages li {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            max-width: 70%; /* Ограничиваем ширину сообщения */
+            border-radius: 15px;
+            word-wrap: break-word; /* Перенос длинных слов */
+        }
+        
+        /* Сообщения других пользователей (слева) */
+        #messages li { 
+            background: #eee; /* Серый фон */
+            color: #000;
+            float: left;
+            clear: both; /* Очистка, чтобы они не смешивались */
+        }
+
+        /* Сообщения отправителя (справа) */
+        #messages li.my-message {
+            background: #DCF8C6; /* Светло-зеленый фон (как в мессенджерах) */
+            color: #000;
+            float: right;
+            clear: both; /* Очистка, чтобы они не смешивались */
+        }
+        
+        /* Стиль для системных сообщений */
+        #messages li em {
+            display: block;
+            text-align: center;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            float: none;
+            background: none;
+            font-size: 11px;
+            color: #777;
+        }
 
         /* Логика отображения имени пользователя */
         #nickname-area {
@@ -64,18 +102,28 @@
         let username = 'Аноним'; 
 
         // -------------------------------------------------------------------
-        // НОВАЯ ФУНКЦИЯ: Отобразить сообщение на экране (теперь принимает объект)
+        // ФУНКЦИЯ: Отобразить сообщение на экране
         function displayMessage(msg) {
             const item = document.createElement('li');
+            
+            // ПРОВЕРКА: Если имя отправителя совпадает с вашим локальным именем
+            if (msg.username === username) {
+                item.classList.add('my-message'); // <--- ДОБАВЛЯЕМ КЛАСС
+            }
             
             // Если это системное сообщение (отправленное с сервера)
             if (msg.username === 'Система') {
                 item.innerHTML = `<em>${msg.text}</em>`;
                 item.style.fontWeight = 'bold';
+                item.style.width = '100%'; // Чтобы системные сообщения были на всю ширину
+                item.style.float = 'none';
+                item.style.background = 'none';
+                item.style.textAlign = 'center';
             } else {
                 // Если это обычное сообщение от пользователя
                 item.textContent = `${msg.username}: ${msg.text}`;
             }
+            
             messages.appendChild(item);
             // Прокрутка вниз
             window.scrollTo(0, document.body.scrollHeight);
@@ -94,15 +142,29 @@
                 
                 // Отправить имя на сервер
                 socket.emit('new user', username); 
+                
+                if (input) {
+                    input.placeholder = `Отправить как ${username}...`;
+                }
             }
         });
 
-        // 2. Обработчик отправки сообщения
+        // 2. ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ОТПРАВКИ СООБЩЕНИЯ
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             if (input.value) {
-                // Отправляем на сервер только чистый текст сообщения
-                socket.emit('chat message', input.value); 
+                const msgText = input.value;
+                
+                // 1. Отправляем на сервер только чистый текст сообщения
+                socket.emit('chat message', msgText); 
+                
+                // 2. СРАЗУ отображаем сообщение на экране отправителя
+                // Это необходимо, так как сервер отправляет его всем, КРОМЕ нас.
+                displayMessage({ 
+                    username: username, // Используем локально сохраненное имя
+                    text: msgText 
+                });
+                
                 input.value = '';
             }
         });
@@ -114,7 +176,7 @@
 
         // 4. Обработка получения НОВОГО сообщения (объекта)
         socket.on('chat message', function(msg) {
-            displayMessage(msg); // <--- ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ
+            displayMessage(msg); 
         });
 
     </script>
