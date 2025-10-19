@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Простой Чат</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        #form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; display: flex; /* Исправлено: form display должен быть flex */ }
+        #input { border: none; padding: 10px; width: 90%; margin-right: .5%; }
+        #form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+
+        /* Логика отображения имени пользователя */
+        #nickname-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 10;
+            padding: 20px;
+        }
+        #nickname-area input, #nickname-area button {
+            padding: 15px;
+            font-size: 18px;
+            margin-top: 10px;
+            width: 300px;
+        }
+        /* Скрыть чат, пока имя не введено */
+        #messages, #form {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="nickname-area">
+        <input id="nickname" placeholder="Введите ваше имя" />
+        <button id="set-nickname">Войти в чат</button>
+    </div>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Отправить</button>
+    </form>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        
+        // Переменные для логики имени пользователя
+        const nicknameArea = document.getElementById('nickname-area');
+        const nicknameInput = document.getElementById('nickname');
+        const setNicknameButton = document.getElementById('set-nickname');
+        let username = 'Аноним'; 
+
+        // -------------------------------------------------------------------
+        // НОВАЯ ФУНКЦИЯ: Отобразить сообщение на экране (теперь принимает объект)
+        function displayMessage(msg) {
+            const item = document.createElement('li');
+            
+            // Если это системное сообщение (отправленное с сервера)
+            if (msg.username === 'Система') {
+                item.innerHTML = `<em>${msg.text}</em>`;
+                item.style.fontWeight = 'bold';
+            } else {
+                // Если это обычное сообщение от пользователя
+                item.textContent = `${msg.username}: ${msg.text}`;
+            }
+            messages.appendChild(item);
+            // Прокрутка вниз
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+        // -------------------------------------------------------------------
+
+        // 1. Логика ввода имени
+        setNicknameButton.addEventListener('click', function() {
+            if (nicknameInput.value.trim()) {
+                username = nicknameInput.value.trim();
+                
+                // Скрыть область ввода имени и показать чат
+                nicknameArea.style.display = 'none';
+                messages.style.display = 'block';
+                form.style.display = 'flex'; // Используем flex для формы
+                
+                // Отправить имя на сервер
+                socket.emit('new user', username); 
+            }
+        });
+
+        // 2. Обработчик отправки сообщения
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value) {
+                // Отправляем на сервер только чистый текст сообщения
+                socket.emit('chat message', input.value); 
+                input.value = '';
+            }
+        });
+
+        // 3. ОБРАБОТКА ИСТОРИИ: Получение старых сообщений (объектов)
+        socket.on('history', function(msgs) {
+            msgs.forEach(displayMessage);
+        });
+
+        // 4. Обработка получения НОВОГО сообщения (объекта)
+        socket.on('chat message', function(msg) {
+            displayMessage(msg); // <--- ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ
+        });
+
+    </script>
+</body>
+</html>
