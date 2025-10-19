@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-const socketio = require('socket.io'); // Импортируем Socket.IO
+const socketio = require('socket.io');
 const mongoose = require('mongoose');
 
 // =========================================================
@@ -26,13 +26,10 @@ const MessageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', MessageSchema); 
 
-// ------------------------------------------------------------------
-// 🛑 КРИТИЧЕСКИ ВАЖНЫЙ КОД: ОБЪЯВЛЕНИЕ 'app', 'server', и 'io'
-// ------------------------------------------------------------------
 // --- 2. НАСТРОЙКА СЕРВЕРА ---
 const app = express();
 const server = http.createServer(app);
-const io = socketio(server); // 💡 Теперь 'io' определено и привязано к серверу!
+const io = socketio(server); // 💡 ОБЪЯВЛЕН объект io
 
 // ИЗМЕНЕНИЕ ДЛЯ ХОСТИНГА: Используем порт, предоставляемый хостингом, или 3000 локально
 const PORT = process.env.PORT || 3000; 
@@ -41,7 +38,6 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
-// ------------------------------------------------------------------
 
 // --- 3. ЛОГИКА ЧАТА (WebSocket) ---
 io.on('connection', async (socket) => {
@@ -88,7 +84,7 @@ io.on('connection', async (socket) => {
       }
   });
   
-  // Обработка входящих сообщений от клиента (Остается без изменений)
+  // Обработка входящих сообщений от клиента
   socket.on('chat message', async (msgText) => {
     const newMessage = { 
       username: currentUsername, 
@@ -110,13 +106,16 @@ io.on('connection', async (socket) => {
     socket.broadcast.emit('chat message', newMessage); 
   });
 
-  // Обработка отключения (Остается без изменений)
+  // Обработка отключения
   socket.on('disconnect', () => {
-    io.emit('chat message', { 
-        username: 'Система', 
-        text: `**${currentUsername}** покинул чат.`, 
-        timestamp: new Date()
-    });
+    // Проверяем, что пользователь успел представиться
+    if (currentUsername !== 'Аноним') {
+        io.emit('chat message', { 
+            username: 'Система', 
+            text: `**${currentUsername}** покинул чат.`, 
+            timestamp: new Date()
+        });
+    }
   });
 });
 
