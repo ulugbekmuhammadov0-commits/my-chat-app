@@ -8,41 +8,29 @@
         #form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; display: flex; }
         #input { border: none; padding: 10px; width: 90%; margin-right: .5%; }
         #form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-        #messages { list-style-type: none; margin: 0; padding: 10px 0 60px 0; /* Добавлен отступ снизу */ }
+        #messages { list-style-type: none; margin: 0; padding: 10px 0 60px 0; }
         
-        /* ----------------------------------------------------- */
-        /* НОВЫЕ СТИЛИ ДЛЯ ПУЗЫРЬКОВ ЧАТА */
-        /* ----------------------------------------------------- */
-        /* ----------------------------------------------------- */
-        /* НОВЫЕ СТИЛИ ДЛЯ ПУЗЫРЬКОВ ЧАТА */
-        /* ----------------------------------------------------- */
-        /* ----------------------------------------------------- */
-        /* НОВЫЕ СТИЛИ ДЛЯ ПУЗЫРЬКОВ ЧАТА */
-        /* ----------------------------------------------------- */
         #messages li {
             padding: 8px 12px;
             margin-bottom: 8px;
-            max-width: 70%; /* Общие свойства */
+            max-width: 70%; 
             border-radius: 15px;
             word-wrap: break-word;
-            clear: both; /* Очистка нужна всем */
+            clear: both; 
         }
         
-        /* Сообщения других пользователей (слева) */
-        #messages li:not(.my-message) { /* 💡 Исправлено: Стили только для сообщений НЕ отправителя */
+        #messages li:not(.my-message) { 
             background: #eee;
             color: #000;
             float: left;
         }
 
-        /* Сообщения отправителя (справа) */
         #messages li.my-message {
-            background: #DCF8C6; /* Светло-зеленый фон */
+            background: #DCF8C6; 
             color: #000;
-            float: right; /* Теперь float: right сработает без конфликта */
+            float: right; 
         }
         
-        /* Стиль для системных сообщений */
         #messages li em {
             display: block;
             text-align: center;
@@ -85,6 +73,7 @@
 <body>
     <div id="nickname-area">
         <input id="nickname" placeholder="Введите ваше имя" />
+        <input id="password" type="password" placeholder="Введите пароль" /> 
         <button id="set-nickname">Войти в чат</button>
     </div>
     <ul id="messages"></ul>
@@ -104,6 +93,8 @@
         const nicknameArea = document.getElementById('nickname-area');
         const nicknameInput = document.getElementById('nickname');
         const setNicknameButton = document.getElementById('set-nickname');
+        // 💡 НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ПОЛЯ ПАРОЛЯ
+        const passwordInput = document.getElementById('password'); 
         let username = 'Аноним'; 
 
         // -------------------------------------------------------------------
@@ -111,62 +102,72 @@
         function displayMessage(msg) {
             const item = document.createElement('li');
             
-            // ПРОВЕРКА: Если имя отправителя совпадает с вашим локальным именем
             if (msg.username === username) {
-                item.classList.add('my-message'); // <--- ДОБАВЛЯЕМ КЛАСС
+                item.classList.add('my-message');
             }
             
-            // Если это системное сообщение (отправленное с сервера)
             if (msg.username === 'Система') {
                 item.innerHTML = `<em>${msg.text}</em>`;
                 item.style.fontWeight = 'bold';
-                item.style.width = '100%'; // Чтобы системные сообщения были на всю ширину
+                item.style.width = '100%';
                 item.style.float = 'none';
                 item.style.background = 'none';
                 item.style.textAlign = 'center';
             } else {
-                // Если это обычное сообщение от пользователя
                 item.textContent = `${msg.username}: ${msg.text}`;
             }
             
             messages.appendChild(item);
-            // Прокрутка вниз
             window.scrollTo(0, document.body.scrollHeight);
         }
         // -------------------------------------------------------------------
 
-        // 1. Логика ввода имени
+        // 1. 💡 ИСПРАВЛЕННАЯ ЛОГИКА ВВОДА ИМЕНИ И ПАРОЛЯ
         setNicknameButton.addEventListener('click', function() {
-            if (nicknameInput.value.trim()) {
-                username = nicknameInput.value.trim();
+            const nicknameValue = nicknameInput.value.trim();
+            const passwordValue = passwordInput.value;
+
+            // Проверяем, что оба поля заполнены
+            if (nicknameValue && passwordValue) {
+                // Отправляем ИМЯ и ПАРОЛЬ на сервер для проверки
+                socket.emit('login', { username: nicknameValue, password: passwordValue }); 
+            }
+        });
+
+        // 💡 НОВЫЙ ОБРАБОТЧИК: Ответ сервера на попытку входа
+        socket.on('login response', function(response) {
+            if (response.success) {
+                username = response.username; // Сохраняем имя после успешной авторизации
                 
                 // Скрыть область ввода имени и показать чат
                 nicknameArea.style.display = 'none';
                 messages.style.display = 'block';
-                form.style.display = 'flex'; // Используем flex для формы
-                
-                // Отправить имя на сервер
-                socket.emit('new user', username); 
+                form.style.display = 'flex'; 
                 
                 if (input) {
                     input.placeholder = `Отправить как ${username}...`;
                 }
+                
+                // Отправляем на сервер событие 'new user' чтобы уведомить всех о входе
+                // ВАЖНО: Мы больше не используем это для установки имени, только для системного сообщения!
+                socket.emit('new user'); 
+
+            } else {
+                alert("Ошибка входа: " + response.message);
+                passwordInput.value = ''; // Очищаем поле пароля после неудачной попытки
             }
         });
-
-        // 2. ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ОТПРАВКИ СООБЩЕНИЯ
+        
+        // 2. ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ОТПРАВКИ СООБЩЕНИЯ (остается прежним)
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             if (input.value) {
                 const msgText = input.value;
                 
-                // 1. Отправляем на сервер только чистый текст сообщения
                 socket.emit('chat message', msgText); 
                 
-                // 2. СРАЗУ отображаем сообщение на экране отправителя
-                // Это необходимо, так как сервер отправляет его всем, КРОМЕ нас.
                 displayMessage({ 
-                    username: username, // Используем локально сохраненное имя
+                    username: username,
                     text: msgText 
                 });
                 
@@ -174,12 +175,12 @@
             }
         });
 
-        // 3. ОБРАБОТКА ИСТОРИИ: Получение старых сообщений (объектов)
+        // 3. ОБРАБОТКА ИСТОРИИ (остается прежним)
         socket.on('history', function(msgs) {
             msgs.forEach(displayMessage);
         });
 
-        // 4. Обработка получения НОВОГО сообщения (объекта)
+        // 4. Обработка получения НОВОГО сообщения (остается прежним)
         socket.on('chat message', function(msg) {
             displayMessage(msg); 
         });
