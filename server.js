@@ -1,5 +1,6 @@
 const express = require('express');
-const http = require = require('http');
+// 💡 ИСПРАВЛЕНА ОПЕЧАТКА: Убран лишний require =
+const http = require('http');
 const socketio = require('socket.io');
 const mongoose = require('mongoose');
 
@@ -24,16 +25,12 @@ const MessageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', MessageSchema); 
 
-// 🛑 УДАЛЕНА СХЕМА USER
-
 // --- 2. НАСТРОЙКА СЕРВЕРА ---
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server); 
 
 const PORT = process.env.PORT || 3000; 
-
-// 🛑 УДАЛЕН РОУТ app.get('/users', ...)
 
 // Обслуживание нашего HTML файла
 app.get('/', (req, res) => {
@@ -55,7 +52,7 @@ io.on('connection', async (socket) => {
       }
   }
 
-  // 💡 ВОССТАНОВЛЕН СТАРЫЙ ОБРАБОТЧИК: Прием только имени пользователя
+  // ОБРАБОТЧИК: Прием только имени пользователя
   socket.on('new user', (name) => {
       currentUsername = name;
       // Отправляем всем (включая нового пользователя) системное сообщение
@@ -65,8 +62,6 @@ io.on('connection', async (socket) => {
         timestamp: new Date()
       });
   });
-
-  // 🛑 УДАЛЕН ОБРАБОТЧИК 'login'
 
   // Обработка входящих сообщений от клиента
   socket.on('chat message', async (msgText) => {
